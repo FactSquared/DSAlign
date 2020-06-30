@@ -106,7 +106,6 @@ def align(triple):
     reasons = Counter()
 
     def skip(index, reason):
-        # logging.info('Fragment {}: {}'.format(index, reason))
         reasons[reason] += 1
 
     def split_match(fragments, start=0, end=-1):
@@ -360,7 +359,6 @@ def main():
     logging.root.setLevel(args.loglevel if args.loglevel else 20)
 
     def progress(it=None, desc='Processing', total=None):
-        # logging.info(desc)
         return it if args.no_progress else log_progress(it, interval=args.progress_interval, total=total)
 
     def resolve(base_path, spec_path):
@@ -384,10 +382,6 @@ def main():
             if args.ignore_missing:
                 return
             fail(prefix + 'Missing transcription log path')
-        # if not exists(audio) and not exists(tlog):
-        #     if args.ignore_missing:
-        #         return
-        #     fail(prefix + 'Both audio file "{}" and transcription log "{}" are missing'.format(audio, tlog))
         if not exists(script):
             if args.ignore_missing:
                 return
@@ -411,8 +405,6 @@ def main():
                             prefix='Problem loading catalog "{}" - '.format(catalog))
     else:
         fail('You have to either specify a combination of "--audio/--tlog,--script,--aligned" or "--catalog"')
-
-    # logging.debug('Start')
 
     to_align = []
     output_graph_path = None
@@ -484,47 +476,7 @@ def main():
             logging.debug('Loading acoustic model from "{}", alphabet from "{}", trie from "{}" and language model from "{}"...'
                           .format(output_graph_path, alphabet_path, trie_path, lm_path))
 
-            # Run VAD on the input file
-            # logging.debug('Transcribing VAD segments...')
             frames = read_frames_from_file(audio_path, model_format, args.audio_vad_frame_length)
-            # segments = vad_split(frames,
-            #                      model_format,
-            #                      num_padding_frames=args.audio_vad_padding,
-            #                      threshold=args.audio_vad_threshold,
-            #                      aggressiveness=args.audio_vad_aggressiveness)
-
-            # def pre_filter():
-            #     for i, segment in enumerate(segments):
-            #         segment_buffer, time_start, time_end = segment
-            #         time_length = time_end - time_start
-            #         if args.stt_min_duration and time_length < args.stt_min_duration:
-            #             logging.info('Fragment {}: Audio too short for STT'.format(i))
-            #             continue
-            #         if args.stt_max_duration and time_length > args.stt_max_duration:
-            #             logging.info('Fragment {}: Audio too long for STT'.format(i))
-            #             continue
-            #         yield (time_start, time_end, np.frombuffer(segment_buffer, dtype=np.int16))
-
-            # COMMENT OUT
-            # samples = list(progress(pre_filter(), desc='VAD splitting'))
-
-            # pool = multiprocessing.Pool(initializer=init_stt,
-            #                             initargs=(output_graph_path, lm_path, trie_path),
-            #                             processes=args.stt_workers)
-            # transcripts = list(progress(pool.imap(stt, samples), desc='Transcribing', total=len(samples)))
-
-            # fragments = []
-            # for time_start, time_end, segment_transcript in transcripts:
-            #     if segment_transcript is None:
-            #         continue
-            #     fragments.append({
-            #         'start': time_start,
-            #         'end': time_end,
-            #         'transcript': segment_transcript
-            #     })
-
-            # logging.debug('Excluded {} empty transcripts'.format(len(transcripts) - len(fragments)))
-            # COMMENT OUT
             logging.debug('Loading fragments file')
             with open(args.fragments, 'r') as fp:
               fragments = json.load(fp)
@@ -545,7 +497,7 @@ def main():
             progress(pool.imap_unordered(align, to_align), total=len(to_align)):
         if args.no_progress:
             index += 1
-            # logging.info('Aligned file {} of {} - wrote results to "{}"'.format(index, len(to_align), aligned_file))
+
         total_fragments += file_total_fragments
         dropped_fragments += file_dropped_fragments
         reasons += file_reasons
@@ -704,13 +656,12 @@ def parse_args():
 
 if __name__ == '__main__':
     args = parse_args()
-    # Cleanup model files
+    # Cleanup model files and transcription cache file
     os.system(f'rm {args.script}.clean >/dev/null 2>&1')
     os.system(f'rm {args.script}.arpa >/dev/null 2>&1')
     os.system(f'rm {args.script}.lm >/dev/null 2>&1')
     os.system(f'rm {args.script}.trie >/dev/null 2>&1')
     os.system(f'rm {args.tlog} >/dev/null 2>&1')
-    # os.system('rm /home/ubuntu/DSAlign/aligned.json >/dev/null 2>&1')
 
     model_dir = os.path.expanduser(args.stt_model_dir if args.stt_model_dir else '/home/ubuntu/DSAlign/models/en')
     if args.alphabet is not None:

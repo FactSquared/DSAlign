@@ -1,6 +1,15 @@
 # DSAlign
 DeepSpeech based forced alignment tool
 
+---
+
+Modified for FactSquared's use, can now take transcript files directly without having to run deepspeech
+transcription first. Now, you just specify the transcript txt, the fragmented transcript (JSON) and use
+--force, and it will dump the alignments to stdout.
+
+## Example Command
+`bin/align.sh --script TRANSCRIPT.txt --force --fragments FRAGMENTS.json > OUTFILE.json`
+
 ## Installation
 
 It is recommended to use this tool from within a virtual environment.
