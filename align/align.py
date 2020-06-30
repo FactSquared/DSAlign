@@ -106,7 +106,7 @@ def align(triple):
     reasons = Counter()
 
     def skip(index, reason):
-        logging.info('Fragment {}: {}'.format(index, reason))
+        # logging.info('Fragment {}: {}'.format(index, reason))
         reasons[reason] += 1
 
     def split_match(fragments, start=0, end=-1):
@@ -360,7 +360,7 @@ def main():
     logging.root.setLevel(args.loglevel if args.loglevel else 20)
 
     def progress(it=None, desc='Processing', total=None):
-        logging.info(desc)
+        # logging.info(desc)
         return it if args.no_progress else log_progress(it, interval=args.progress_interval, total=total)
 
     def resolve(base_path, spec_path):
@@ -384,10 +384,10 @@ def main():
             if args.ignore_missing:
                 return
             fail(prefix + 'Missing transcription log path')
-        if not exists(audio) and not exists(tlog):
-            if args.ignore_missing:
-                return
-            fail(prefix + 'Both audio file "{}" and transcription log "{}" are missing'.format(audio, tlog))
+        # if not exists(audio) and not exists(tlog):
+        #     if args.ignore_missing:
+        #         return
+        #     fail(prefix + 'Both audio file "{}" and transcription log "{}" are missing'.format(audio, tlog))
         if not exists(script):
             if args.ignore_missing:
                 return
@@ -412,7 +412,7 @@ def main():
     else:
         fail('You have to either specify a combination of "--audio/--tlog,--script,--aligned" or "--catalog"')
 
-    logging.debug('Start')
+    # logging.debug('Start')
 
     to_align = []
     output_graph_path = None
@@ -449,7 +449,10 @@ def main():
                         arpa_path,
                         '--o',
                         '5'
-                    ])
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                    )
 
                 lm_path = script_path + '.lm'
                 if not path.exists(lm_path):
@@ -458,7 +461,10 @@ def main():
                         '-s',
                         arpa_path,
                         lm_path
-                    ])
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                    )
 
                 trie_path = script_path + '.trie'
                 if not path.exists(trie_path):
@@ -467,7 +473,10 @@ def main():
                         alphabet_path,
                         lm_path,
                         trie_path
-                    ])
+                    ],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                    )
             else:
                 lm_path = lang_lm_path
                 trie_path = lang_trie_path
@@ -476,44 +485,49 @@ def main():
                           .format(output_graph_path, alphabet_path, trie_path, lm_path))
 
             # Run VAD on the input file
-            logging.debug('Transcribing VAD segments...')
+            # logging.debug('Transcribing VAD segments...')
             frames = read_frames_from_file(audio_path, model_format, args.audio_vad_frame_length)
-            segments = vad_split(frames,
-                                 model_format,
-                                 num_padding_frames=args.audio_vad_padding,
-                                 threshold=args.audio_vad_threshold,
-                                 aggressiveness=args.audio_vad_aggressiveness)
+            # segments = vad_split(frames,
+            #                      model_format,
+            #                      num_padding_frames=args.audio_vad_padding,
+            #                      threshold=args.audio_vad_threshold,
+            #                      aggressiveness=args.audio_vad_aggressiveness)
 
-            def pre_filter():
-                for i, segment in enumerate(segments):
-                    segment_buffer, time_start, time_end = segment
-                    time_length = time_end - time_start
-                    if args.stt_min_duration and time_length < args.stt_min_duration:
-                        logging.info('Fragment {}: Audio too short for STT'.format(i))
-                        continue
-                    if args.stt_max_duration and time_length > args.stt_max_duration:
-                        logging.info('Fragment {}: Audio too long for STT'.format(i))
-                        continue
-                    yield (time_start, time_end, np.frombuffer(segment_buffer, dtype=np.int16))
+            # def pre_filter():
+            #     for i, segment in enumerate(segments):
+            #         segment_buffer, time_start, time_end = segment
+            #         time_length = time_end - time_start
+            #         if args.stt_min_duration and time_length < args.stt_min_duration:
+            #             logging.info('Fragment {}: Audio too short for STT'.format(i))
+            #             continue
+            #         if args.stt_max_duration and time_length > args.stt_max_duration:
+            #             logging.info('Fragment {}: Audio too long for STT'.format(i))
+            #             continue
+            #         yield (time_start, time_end, np.frombuffer(segment_buffer, dtype=np.int16))
 
-            samples = list(progress(pre_filter(), desc='VAD splitting'))
+            # COMMENT OUT
+            # samples = list(progress(pre_filter(), desc='VAD splitting'))
 
-            pool = multiprocessing.Pool(initializer=init_stt,
-                                        initargs=(output_graph_path, lm_path, trie_path),
-                                        processes=args.stt_workers)
-            transcripts = list(progress(pool.imap(stt, samples), desc='Transcribing', total=len(samples)))
+            # pool = multiprocessing.Pool(initializer=init_stt,
+            #                             initargs=(output_graph_path, lm_path, trie_path),
+            #                             processes=args.stt_workers)
+            # transcripts = list(progress(pool.imap(stt, samples), desc='Transcribing', total=len(samples)))
 
-            fragments = []
-            for time_start, time_end, segment_transcript in transcripts:
-                if segment_transcript is None:
-                    continue
-                fragments.append({
-                    'start': time_start,
-                    'end': time_end,
-                    'transcript': segment_transcript
-                })
-            logging.debug('Excluded {} empty transcripts'.format(len(transcripts) - len(fragments)))
+            # fragments = []
+            # for time_start, time_end, segment_transcript in transcripts:
+            #     if segment_transcript is None:
+            #         continue
+            #     fragments.append({
+            #         'start': time_start,
+            #         'end': time_end,
+            #         'transcript': segment_transcript
+            #     })
 
+            # logging.debug('Excluded {} empty transcripts'.format(len(transcripts) - len(fragments)))
+            # COMMENT OUT
+            logging.debug('Loading fragments file')
+            with open(args.fragments, 'r') as fp:
+              fragments = json.load(fp)
             logging.debug('Writing transcription log to file "{}"...'.format(tlog_path))
             with open(tlog_path, 'w') as tlog_file:
                 tlog_file.write(json.dumps(fragments, indent=4 if args.output_pretty else None))
@@ -528,36 +542,49 @@ def main():
     index = 0
     pool = multiprocessing.Pool(processes=args.align_workers)
     for aligned_file, file_total_fragments, file_dropped_fragments, file_reasons in \
-            progress(pool.imap_unordered(align, to_align), desc='Aligning', total=len(to_align)):
+            progress(pool.imap_unordered(align, to_align), total=len(to_align)):
         if args.no_progress:
             index += 1
-            logging.info('Aligned file {} of {} - wrote results to "{}"'.format(index, len(to_align), aligned_file))
+            # logging.info('Aligned file {} of {} - wrote results to "{}"'.format(index, len(to_align), aligned_file))
         total_fragments += file_total_fragments
         dropped_fragments += file_dropped_fragments
         reasons += file_reasons
-
-    logging.info('Aligned {} fragments'.format(total_fragments))
+    m2 = ""
+    m3 = ""
+    m1 = "Aligned {} fragments".format(total_fragments)
     if total_fragments > 0 and dropped_fragments > 0:
-        logging.info('Dropped {} fragments {:0.2f}%:'.format(dropped_fragments,
-                                                             dropped_fragments * 100.0 / total_fragments))
+        m2 = "Dropped {} fragments {:0.2f}%:".format(dropped_fragments,
+                                                             dropped_fragments * 100.0 / total_fragments)
         for key, number in reasons.most_common():
-            logging.info(' - {}: {}'.format(key, number))
+            m3 = " - {}: {}".format(key, number)
+    
+    with open(args.aligned, 'r') as fp:
+        data = json.load(fp)
+        output = {
+          "meta": [m1, m2, m3],
+          "data": data
+        }
+    os.system(f'rm {args.aligned}')
+    str_output = json.dumps(output)
+    print(str_output)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Force align speech data with a transcript.')
 
     parser.add_argument('--audio', type=str,
-                        help='Path to speech audio file')
+                        help='Path to speech audio file', default='/')
     parser.add_argument('--tlog', type=str,
-                        help='Path to STT transcription log (.tlog)')
+                        help='Path to STT transcription log (.tlog)', default='/home/ubuntu/transcript.log')
     parser.add_argument('--script', type=str,
                         help='Path to original transcript (plain text or .script file)')
+    parser.add_argument('--fragments', type=str,
+                        help='Path to JSON fragments file')
     parser.add_argument('--catalog', type=str,
                         help='Path to a catalog file with paths to transcription log or audio, original script and '
                              '(target) alignment files')
     parser.add_argument('--aligned', type=str,
-                        help='Alignment result file (.aligned)')
+                        help='Alignment result file (.aligned)', default='aligned.json')
     parser.add_argument('--force', action="store_true",
                         help='Overwrite existing files')
     parser.add_argument('--ignore-missing', action="store_true",
@@ -660,7 +687,7 @@ def parse_args():
 
     output_group = parser.add_argument_group(title='Output options')
     output_group.add_argument('--output-pretty', action="store_true",
-                              help='Writes indented JSON output"')
+                              help='Writes indented JSON output"', default=True)
 
     for short in NAMED_NUMBERS.keys():
         long, atype, desc = NAMED_NUMBERS[short]
@@ -675,10 +702,17 @@ def parse_args():
 
     return parser.parse_args()
 
-
 if __name__ == '__main__':
     args = parse_args()
-    model_dir = os.path.expanduser(args.stt_model_dir if args.stt_model_dir else 'models/en')
+    # Cleanup model files
+    os.system(f'rm {args.script}.clean >/dev/null 2>&1')
+    os.system(f'rm {args.script}.arpa >/dev/null 2>&1')
+    os.system(f'rm {args.script}.lm >/dev/null 2>&1')
+    os.system(f'rm {args.script}.trie >/dev/null 2>&1')
+    os.system(f'rm {args.tlog} >/dev/null 2>&1')
+    # os.system('rm /home/ubuntu/DSAlign/aligned.json >/dev/null 2>&1')
+
+    model_dir = os.path.expanduser(args.stt_model_dir if args.stt_model_dir else '/home/ubuntu/DSAlign/models/en')
     if args.alphabet is not None:
         alphabet_path = args.alphabet
     else:
@@ -689,3 +723,4 @@ if __name__ == '__main__':
     alphabet = Alphabet(alphabet_path)
     model_format = (args.stt_model_rate, 1, 2)
     main()
+    

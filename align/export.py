@@ -43,7 +43,7 @@ class Fragment:
 
 def progress(it=None, desc=None, total=None):
     if desc is not None:
-        logging.info(desc)
+        # logging.info(desc)
     return it if CLI_ARGS.no_progress else log_progress(it, interval=CLI_ARGS.progress_interval, total=total)
 
 
@@ -182,9 +182,9 @@ def load_fragments(catalog_entries):
         fail('No samples left for export')
 
     if len(reasons.keys()) > 0:
-        logging.info('Excluded number of samples (for each reason):')
+        # logging.info('Excluded number of samples (for each reason):')
         for reason, count in reasons.most_common():
-            logging.info(' - "{}": {}'.format(reason, count))
+            # logging.info(' - "{}": {}'.format(reason, count))
     return fragments
 
 
@@ -209,9 +209,9 @@ def debias(fragments):
                     group_fragments = group_fragments[-cap:]
                 fragments.extend(group_fragments)
             if len(counter.keys()) > 0:
-                logging.info('Dropped for de-biasing "{}":'.format(debias))
+                # logging.info('Dropped for de-biasing "{}":'.format(debias))
                 for group, count in counter.most_common():
-                    logging.info(' - "{}": {}'.format(group, count))
+                    # logging.info(' - "{}": {}'.format(group, count))
     return fragments
 
 
@@ -259,7 +259,7 @@ def split(fragments, set_assignments):
         for f in frags:
             f.list_name = name
             duration += f.duration
-        logging.info('Built set "{}" (samples: {}, duration: {})'
+        # logging.info('Built set "{}" (samples: {}, duration: {})'
                      .format(name, len(frags), timedelta(milliseconds=duration)))
 
     if CLI_ARGS.split_seed is not None:
@@ -466,11 +466,11 @@ def load_sample_dry(entry):
     catalog_index, catalog_entry = entry
     audio_path, aligned_path = catalog_entry
     if path.isfile(audio_path):
-        logging.info('Would load file "{}"'.format(audio_path))
+        # logging.info('Would load file "{}"'.format(audio_path))
     else:
         fail('Audio file not found: "{}"'.format(audio_path))
     if path.isfile(aligned_path):
-        logging.info('Would load file "{}"'.format(audio_path))
+        # logging.info('Would load file "{}"'.format(audio_path))
     else:
         fail('Alignment file not found: "{}"'.format(audio_path))
     return catalog_index, '', False, []
@@ -532,7 +532,7 @@ def write_csvs_and_samples(catalog_entries, lists, fragments):
     tar = None
     if CLI_ARGS.target_tar is not None:
         if CLI_ARGS.dry_run:
-            logging.info('Would create tar-file "{}"'.format(CLI_ARGS.target_tar))
+            # logging.info('Would create tar-file "{}"'.format(CLI_ARGS.target_tar))
         else:
             base_tar = open(CLI_ARGS.target_tar, 'wb', buffering=CLI_ARGS.buffer)
             tar = tarfile.open(fileobj=base_tar, mode='w')
@@ -553,7 +553,7 @@ def write_csvs_and_samples(catalog_entries, lists, fragments):
                         dir_path = path.join(*dirs[:i + 1])
                         if not path.isdir(dir_path):
                             if CLI_ARGS.dry_run:
-                                logging.info('Would create directory "{}"'.format(dir_path))
+                                # logging.info('Would create directory "{}"'.format(dir_path))
                             else:
                                 os.mkdir(dir_path)
                     else:
@@ -564,7 +564,7 @@ def write_csvs_and_samples(catalog_entries, lists, fragments):
             if CLI_ARGS.target_tar is None:
                 file_path = path.join(CLI_ARGS.target_dir, *self.data_path.split('/'))
                 if CLI_ARGS.dry_run:
-                    logging.info('Would write file "{}"'.format(file_path))
+                    # logging.info('Would write file "{}"'.format(file_path))
                     self.open_file = io.BytesIO() if 'b' in self.mode else io.StringIO()
                 else:
                     self.open_file = open(file_path, self.mode)
@@ -605,7 +605,7 @@ def write_csvs_and_samples(catalog_entries, lists, fragments):
 
     for list_name, group_list in group_lists.items():
         csv_filename = list_name + '.csv'
-        logging.info('Writing "{}"'.format(csv_filename))
+        # logging.info('Writing "{}"'.format(csv_filename))
         with TargetFile(csv_filename, 'w') as csv_file:
             writer = csv.writer(csv_file)
             writer.writerow(['wav_filename', 'wav_filesize', 'transcript'])
@@ -613,7 +613,7 @@ def write_csvs_and_samples(catalog_entries, lists, fragments):
                 writer.writerow([rel_path, file_size, transcript])
         if not CLI_ARGS.no_meta:
             meta_filename = list_name + '.meta'
-            logging.info('Writing "{}"'.format(meta_filename))
+            # logging.info('Writing "{}"'.format(meta_filename))
             with TargetFile(meta_filename, 'w') as meta_file:
                 path_fragment_list = map(lambda gi: (gi[0], gi[2]), group_list)
                 write_meta(meta_file, catalog_entries, path_fragment_list, total=len(group_list))
@@ -628,9 +628,9 @@ def write_sdbs(catalog_entries, lists, fragments):
     for list_name in lists:
         sdb_path = os.path.join(CLI_ARGS.target_dir, list_name + '.sdb')
         if CLI_ARGS.dry_run:
-            logging.info('Would create SDB "{}"'.format(sdb_path))
+            # logging.info('Would create SDB "{}"'.format(sdb_path))
         else:
-            logging.info('Creating SDB "{}"'.format(sdb_path))
+            # logging.info('Creating SDB "{}"'.format(sdb_path))
             sdbs[list_name] = SortingSDBWriter(sdb_path,
                                                audio_type=audio_type,
                                                buffering=CLI_ARGS.buffer,
@@ -657,13 +657,13 @@ def write_sdbs(catalog_entries, lists, fragments):
         meta_path = os.path.join(CLI_ARGS.target_dir, list_name + '.meta')
         if CLI_ARGS.dry_run:
             if not CLI_ARGS.no_meta:
-                logging.info('Would write meta file "{}"'.format(meta_path))
+                # logging.info('Would write meta file "{}"'.format(meta_path))
         else:
             sdb_path = os.path.join(CLI_ARGS.target_dir, list_name + '.sdb')
             for _ in progress(sdb.finalize(), desc='Finalizing "{}"'.format(sdb_path), total=set_counter[list_name]):
                 pass
             if not CLI_ARGS.no_meta:
-                logging.info('Writing "{}"'.format(meta_path))
+                # logging.info('Writing "{}"'.format(meta_path))
                 with open(meta_path, 'w') as meta_file:
                     write_meta(meta_file, catalog_entries, enumerate(sdb.meta_list), total=len(sdb.meta_list))
 
@@ -671,7 +671,7 @@ def write_sdbs(catalog_entries, lists, fragments):
 def load_plan():
     if CLI_ARGS.plan is not None and os.path.isfile(CLI_ARGS.plan):
         try:
-            logging.info('Loading export-plan from "{}"'.format(CLI_ARGS.plan))
+            # logging.info('Loading export-plan from "{}"'.format(CLI_ARGS.plan))
             with open(CLI_ARGS.plan, 'rb') as plan_file:
                 catalog_entries, lists, fragments = pickle.load(plan_file)
             return True, catalog_entries, lists, fragments
@@ -683,7 +683,7 @@ def load_plan():
 
 def save_plan(catalog_entries, lists, fragments):
     if CLI_ARGS.plan is not None:
-        logging.info('Saving export-plan to "{}"'.format(CLI_ARGS.plan))
+        # logging.info('Saving export-plan to "{}"'.format(CLI_ARGS.plan))
         with open(CLI_ARGS.plan, 'wb') as plan_file:
             pickle.dump((catalog_entries, lists, fragments), plan_file)
 

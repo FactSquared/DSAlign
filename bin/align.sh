@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 approot=$(cd "$(dirname "$(dirname "$0")")" && pwd)
-source "$approot/venv/bin/activate"
+. "$approot/venv/bin/activate"
 python "$approot/align/align.py" "$@"
